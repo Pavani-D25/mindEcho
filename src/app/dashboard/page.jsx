@@ -1,74 +1,93 @@
 "use client";
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Mic, MessageSquare, Home, BookOpen, User } from 'lucide-react';
+import MoodAnalysisChart from '../../components/MoodAnalysisChart';
+import MoodInputCard from '../../components/MoodInputCard';
+import DailyNotesCalendar from "@/components/DailyNotesCalendar.jsx";
+import Recommendations from '../../components/Recommendations';
+import VoiceAssistant from '../../components/VoiceAssistant';
+import ChatBot from '../../components/ChatBot'; // Corrected
+import FloatingNav from '../../components/FloatingNav';
+import UserMenu from '@/components/UserMenu';
+import JournalModal from '../../components/JournalModal'; // if used
 
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import MoodTracker from "@/components/mood/MoodTracker";
-import MoodHistory from "@/components/mood/MoodHistory";
-import UserMenu from "@/components/auth/UserMenu";
-import MoodTrendChart from "@/components/mood/MoodTrendChart";
-import { motion } from "framer-motion";
-import { FloatingNav } from "@/components/ui/floating-nav";
-import { BackgroundBeams } from "@/components/ui/background-beams";
-import { SparklesCore } from "@/components/ui/sparkles";
+export default function Dashboard() {
+  const [activeView, setActiveView] = useState('home');
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
+  const [showJournalModal, setShowJournalModal] = useState(false);
 
-export default function DashboardPage() {
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-neutral-950 relative overflow-hidden">
-        <BackgroundBeams className="absolute inset-0 z-0" />
-        <div className="absolute inset-0 z-0">
-          <SparklesCore
-            id="tsparticlesfullpage"
-            background="transparent"
-            minSize={0.6}
-            maxSize={1.4}
-            particleDensity={50}
-            className="w-full h-full"
-            particleColor="#FFFFFF"
-          />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
+      {/* Top Navigation */}
+      <header className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
+          MindBloom
+        </h1>
+        <UserMenu />
+      </header>
 
-        <FloatingNav className="z-50" />
+      {/* Floating Navigation */}
+      <FloatingNav 
+        activeView={activeView} 
+        setActiveView={setActiveView}
+        setShowVoiceAssistant={setShowVoiceAssistant}
+        setShowChatBot={setShowChatBot}
+        setShowJournalModal={setShowJournalModal}
+      />
 
-        <div className="relative z-10 container mx-auto px-4 py-12">
-          <div className="flex justify-end mb-8">
-            <UserMenu />
+      {/* Conditional Rendering Based on Active View */}
+      {activeView === 'home' && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 space-y-6">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-2xl shadow-xl p-6"
+              >
+                <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Monthly Mood Analysis</h2>
+                <MoodAnalysisChart />
+              </motion.div>
+              <MoodInputCard />
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <DailyNotesCalendar />
+            </div>
           </div>
+          <Recommendations />
+        </>
+      )}
 
+      {activeView === 'mood' && (
+        <>
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+            className="bg-white rounded-2xl shadow-xl p-6 max-w-3xl mx-auto"
           >
-            <div className="lg:col-span-2 space-y-8">
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <MoodTracker />
-              </motion.div>
-
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <MoodTrendChart />
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="lg:col-span-1"
-            >
-              <MoodHistory />
-            </motion.div>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Mood Dashboard</h2>
+            <MoodAnalysisChart />
+            <MoodInputCard />
+            <CalendarWithMood />
           </motion.div>
-        </div>
-      </div>
-    </ProtectedRoute>
+        </>
+      )}
+
+      {/* Modals */}
+      <AnimatePresence>
+        {showVoiceAssistant && (
+          <VoiceAssistant onClose={() => setShowVoiceAssistant(false)} />
+        )}
+        {showChatBot && (
+          <ChatBot onClose={() => setShowChatBot(false)} />
+        )}
+        {showJournalModal && (
+          <JournalModal onClose={() => setShowJournalModal(false)} />
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
