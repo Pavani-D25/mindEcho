@@ -8,7 +8,23 @@ export default function VoiceAssistant({ onClose }) {
   const [transcript, setTranscript] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const recognitionRef = useRef(null);
+  const animationRef = useRef(null);
+
+  // Audio level animation
+  useEffect(() => {
+    if (isListening) {
+      const updateAudioLevel = () => {
+        setAudioLevel(Math.random() * 100);
+        animationRef.current = requestAnimationFrame(updateAudioLevel);
+      };
+      animationRef.current = requestAnimationFrame(updateAudioLevel);
+      return () => cancelAnimationFrame(animationRef.current);
+    } else {
+      setAudioLevel(0);
+    }
+  }, [isListening]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -55,6 +71,7 @@ export default function VoiceAssistant({ onClose }) {
         if (recognitionRef.current) {
           recognitionRef.current.stop();
         }
+        cancelAnimationFrame(animationRef.current);
       };
     }
   }, [isListening]);
@@ -75,11 +92,10 @@ export default function VoiceAssistant({ onClose }) {
   };
 
   const handleSend = async () => {
-    if (!transcript || transcript === 'Listening...') return;
+    if (!transcript) return;
     
     setIsProcessing(true);
     try {
-      // Call your API endpoint
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,8 +106,6 @@ export default function VoiceAssistant({ onClose }) {
 
       const data = await response.json();
       setAiResponse(data.reply);
-      
-      // Speak the response
       speakResponse(data.reply);
     } catch (error) {
       console.error('Error:', error);
@@ -104,77 +118,155 @@ export default function VoiceAssistant({ onClose }) {
   const speakResponse = (text) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1;
-      utterance.pitch = 1;
+      utterance.rate = 0.9;
+      utterance.pitch = 0.8;
       window.speechSynthesis.speak(utterance);
     }
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
+      {/* Enhanced glassmorphic backdrop */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-br from-purple-100/30 to-blue-100/30 backdrop-blur-lg" 
+        onClick={onClose} 
+      />
+      
+      {/* Main container with futuristic design */}
       <motion.div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
-        layout
+        initial={{ y: 20, scale: 0.98 }}
+        animate={{ y: 0, scale: 1 }}
+        className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-white/50 border-opacity-40"
+        style={{
+          boxShadow: '0 8px 32px rgba(149, 117, 205, 0.3)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(246,240,255,0.8) 100%)'
+        }}
       >
-        <div className="p-4 border-b flex justify-between items-center bg-purple-600 text-white">
-          <h3 className="text-lg font-semibold">Voice Assistant</h3>
+        {/* Holographic header */}
+        <div className="p-5 border-b border-white/30 flex justify-between items-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5"></div>
+          <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 relative z-10">
+            VOICE INTERFACE
+          </h3>
           <button 
             onClick={onClose} 
-            className="text-white hover:text-purple-200 transition-colors"
+            className="p-1.5 rounded-full hover:bg-white/30 transition-all relative z-10"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-purple-600" />
           </button>
         </div>
 
+        {/* Content area */}
         <div className="p-6">
-          <div className="bg-gray-50 rounded-lg p-4 min-h-32 mb-4">
-            <p className="text-gray-800">
-              {transcript || "Speak your thoughts and feelings..."}
-            </p>
-            {aiResponse && (
-              <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                <p className="text-purple-800">{aiResponse}</p>
+          {/* Futuristic glass panel with dynamic audio visualization */}
+          <div className="relative bg-white/60 rounded-2xl p-5 min-h-48 mb-6 border border-white/50 overflow-hidden">
+            {/* Audio visualization bars */}
+            {isListening && (
+              <div className="absolute inset-0 flex items-end justify-center gap-1 px-4 pb-3 pointer-events-none">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      height: `${Math.random() * audioLevel}%`,
+                    }}
+                    transition={{ duration: 0.2 }}
+                    className="w-1.5 bg-gradient-to-t from-purple-400 to-blue-400 rounded-t-full"
+                    style={{ height: `${Math.random() * 30}%` }}
+                  />
+                ))}
               </div>
             )}
-            {isProcessing && (
-              <div className="mt-4 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-              </div>
-            )}
+            
+            {/* Text content */}
+            <div className="relative z-10">
+              <p className="text-gray-800 mb-4">
+                {transcript || (
+                  <span className="text-gray-500/80">Speak your thoughts...</span>
+                )}
+              </p>
+              {aiResponse && (
+                <div className="p-4 bg-gradient-to-r from-purple-50/70 to-blue-50/70 rounded-xl border border-purple-200/50 backdrop-blur-sm">
+                  <p className="text-gray-800">{aiResponse}</p>
+                </div>
+              )}
+              {isProcessing && (
+                <div className="flex items-center justify-center mt-4 space-x-2">
+                  {[1, 2, 3].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2 }}
+                      className="w-2 h-2 bg-purple-600 rounded-full"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-col items-center gap-4">
-            <button
+          {/* Futuristic mic button with halo effect */}
+          <div className="flex justify-center mb-6">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={toggleListening}
-              className={`p-5 rounded-full ${
+              className={`relative p-6 rounded-full ${
                 isListening 
-                  ? 'bg-red-500 animate-pulse ring-4 ring-red-200' 
-                  : 'bg-purple-600 hover:bg-purple-700'
-              } text-white shadow-lg transition-all`}
-              aria-label={isListening ? "Stop listening" : "Start listening"}
+                  ? 'bg-red-500/90 shadow-lg shadow-red-400/30' 
+                  : 'bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg'
+              } text-white border-2 border-white/50`}
+              style={{
+                backdropFilter: 'blur(10px)'
+              }}
             >
               {isListening ? (
-                <MicOff className="w-6 h-6" />
+                <>
+                  <MicOff className="w-7 h-7" />
+                  <div className="absolute inset-0 rounded-full border-2 border-red-400/50 animate-pulse"></div>
+                </>
               ) : (
-                <Mic className="w-6 h-6" />
+                <>
+                  <Mic className="w-7 h-7" />
+                  <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
+                </>
               )}
-            </button>
-
-            {transcript && !isListening && (
-              <button
-                onClick={handleSend}
-                disabled={isProcessing}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium disabled:opacity-50 transition-colors"
-              >
-                {isProcessing ? 'Processing...' : 'Get Recommendations'}
-              </button>
-            )}
+            </motion.button>
           </div>
+
+          {/* Submit button with futuristic styling */}
+          {transcript && !isListening && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSend}
+              disabled={isProcessing}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-3.5 px-6 rounded-xl font-medium disabled:opacity-50 transition-all shadow-lg relative overflow-hidden"
+            >
+              <span className="relative z-10">
+                {isProcessing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    PROCESSING
+                  </span>
+                ) : (
+                  'GET RESPONSE'
+                )}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-blue-500/30 opacity-0 hover:opacity-100 transition-opacity"></div>
+            </motion.button>
+          )}
+        </div>
+
+        {/* Futuristic footer */}
+        <div className="px-5 py-3 bg-white/30 border-t border-white/30 text-center">
+          <p className="text-xs text-purple-600/80 font-mono">
+            {isListening ? 'LISTENING...' : 'READY'} | VOICE INTERFACE v2.0
+          </p>
         </div>
       </motion.div>
     </motion.div>
