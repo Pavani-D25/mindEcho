@@ -1,7 +1,120 @@
-// /src/app/api/analyze-mood/route.js
-// Save recommendations to Firebase RTDB after AI generation
+// // /src/app/api/analyze-mood/route.js
+// // Save recommendations to Firebase RTDB after AI generation
 
-import { initializeApp } from "firebase/app";
+// import { initializeApp } from "firebase/app";
+// import { getDatabase, ref, push } from "firebase/database";
+
+// const firebaseConfig = {
+//   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+//   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+//   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+//   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+//   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_SENDER_ID,
+//   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+//   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+// };
+
+// const app = initializeApp(firebaseConfig);
+// const rtdb = getDatabase(app);
+
+// export async function POST(req) {
+//   const { text, userId = "guest" } = await req.json();
+
+//   const messages = [
+//     {
+//       role: "system",
+//       content: `You are a compassionate mental health assistant.
+
+// Based on the user's journal entry, analyze their emotional state and return a JSON response with personalized recommendations for:
+
+// 1. An exercise
+// 2. A song
+// 3. A movie
+
+// Each should have:
+// - title
+// - description
+// - duration
+
+// IMPORTANT:
+// - Return ONLY valid JSON.
+// - DO NOT include any extra text or markdown (like \`\`\`json).
+// - Format exactly like:
+// {
+//   "exercise": {
+//     "title": "...",
+//     "description": "...",
+//     "duration": "..."
+//   },
+//   "song": {
+//     "title": "...",
+//     "description": "...",
+//     "duration": "..."
+//   },
+//   "movie": {
+//     "title": "...",
+//     "description": "...",
+//     "duration": "..."
+//   }
+// }`,
+//     },
+//     {
+//       role: "user",
+//       content: text,
+//     },
+//   ];
+
+//   try {
+//     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+//       },
+//       body: JSON.stringify({
+//         model: "anthropic/claude-3-haiku",
+//         messages,
+//         temperature: 0.7,
+//       }),
+//     });
+
+//     const data = await response.json();
+//     const content = data.choices?.[0]?.message?.content?.trim();
+
+//     if (!content) {
+//       return new Response(JSON.stringify({ error: "No response from AI" }), { status: 500 });
+//     }
+
+//     try {
+//       const parsed = JSON.parse(content);
+
+//       // 🔥 Save to Firebase Realtime DB
+//       const recRef = ref(rtdb, `recommendations/${userId}`);
+//       await push(recRef, {
+//         timestamp: Date.now(),
+//         journal: text,
+//         ...parsed,
+//       });
+
+//       return new Response(JSON.stringify(parsed), {
+//         status: 200,
+//         headers: { "Content-Type": "application/json" },
+//       });
+//     } catch (err) {
+//       console.error("❌ JSON Parse Error:", content);
+//       return new Response(JSON.stringify({ error: "Invalid AI JSON.", raw: content }), { status: 500 });
+//     }
+//   } catch (error) {
+//     console.error("🔥 Chat API Error:", error);
+//     return new Response(JSON.stringify({ error: "AI fetch failed." }), { status: 500 });
+//   }
+// }
+
+
+
+
+// /src/app/api/analyze-mood/route.js
+import { initializeApp, getApps } from "firebase/app";
 import { getDatabase, ref, push } from "firebase/database";
 
 const firebaseConfig = {
@@ -14,98 +127,181 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only if it hasn't been initialized
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const rtdb = getDatabase(app);
 
 export async function POST(req) {
-  const { text, userId = "guest" } = await req.json();
+  try {
+    const { text, userId = "guest", mood } = await req.json();
 
-  const messages = [
-    {
-      role: "system",
-      content: `You are a compassionate mental health assistant.
+    if (!text || text.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Text is required" }), 
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are a compassionate mental health assistant.
 
 Based on the user's journal entry, analyze their emotional state and return a JSON response with personalized recommendations for:
 
-1. An exercise
+1. An exercise/activity
 2. A song
-3. A movie
+3. A movie/video content
 
 Each should have:
-- title
-- description
-- duration
+- title (string)
+- description (string, max 50 words)
+- duration (string, e.g., "15 minutes", "3 hours")
 
-IMPORTANT:
-- Return ONLY valid JSON.
-- DO NOT include any extra text or markdown (like \`\`\`json).
-- Format exactly like:
+CRITICAL INSTRUCTIONS:
+- Return ONLY valid JSON, no markdown, no backticks, no extra text
+- Ensure all fields are present and properly formatted
+- Keep descriptions concise and supportive
+- Choose content that matches the user's emotional state
+
+Example format:
 {
   "exercise": {
-    "title": "...",
-    "description": "...",
-    "duration": "..."
+    "title": "Morning Yoga Flow",
+    "description": "Gentle stretches to energize your body and calm your mind",
+    "duration": "15 minutes"
   },
   "song": {
-    "title": "...",
-    "description": "...",
-    "duration": "..."
+    "title": "Here Comes the Sun - The Beatles",
+    "description": "An uplifting classic to brighten your mood and inspire positivity",
+    "duration": "3 minutes"
   },
   "movie": {
-    "title": "...",
-    "description": "...",
-    "duration": "..."
+    "title": "The Secret Life of Walter Mitty",
+    "description": "An inspiring adventure about following your dreams and finding courage",
+    "duration": "114 minutes"
   }
 }`,
-    },
-    {
-      role: "user",
-      content: text,
-    },
-  ];
+      },
+      {
+        role: "user",
+        content: text,
+      },
+    ];
 
-  try {
+    console.log("🤖 Sending request to OpenRouter...");
+    
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+        "X-Title": "Mood Analyzer App",
       },
       body: JSON.stringify({
         model: "anthropic/claude-3-haiku",
         messages,
         temperature: 0.7,
+        max_tokens: 1000,
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ OpenRouter API Error:", response.status, errorText);
+      throw new Error(`OpenRouter API failed: ${response.status}`);
+    }
+
     const data = await response.json();
+    console.log("✅ OpenRouter Response:", data);
+
     const content = data.choices?.[0]?.message?.content?.trim();
 
     if (!content) {
-      return new Response(JSON.stringify({ error: "No response from AI" }), { status: 500 });
+      console.error("❌ No content in OpenRouter response");
+      return new Response(
+        JSON.stringify({ error: "No response from AI" }), 
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
     }
 
+    let parsed;
     try {
-      const parsed = JSON.parse(content);
+      // Clean the content to remove any potential markdown formatting
+      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      parsed = JSON.parse(cleanContent);
+      
+      // Validate the response structure
+      if (!parsed.exercise || !parsed.song || !parsed.movie) {
+        throw new Error("Missing required fields in AI response");
+      }
 
-      // 🔥 Save to Firebase Realtime DB
+      // Validate each recommendation has required fields
+      const requiredFields = ['title', 'description', 'duration'];
+      for (const category of ['exercise', 'song', 'movie']) {
+        for (const field of requiredFields) {
+          if (!parsed[category][field]) {
+            throw new Error(`Missing ${field} in ${category}`);
+          }
+        }
+      }
+
+    } catch (parseError) {
+      console.error("❌ JSON Parse Error:", parseError);
+      console.error("❌ Raw content:", content);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid AI response format", 
+          details: parseError.message,
+          raw: content 
+        }), 
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Save to Firebase Realtime Database
+    try {
+      const timestamp = new Date().toISOString();
+      
+      // Save mood data if provided
+      if (mood) {
+        const moodRef = ref(rtdb, `moods/${userId}`);
+        await push(moodRef, {
+          date: timestamp,
+          mood: mood,
+        });
+      }
+
+      // Save recommendations
       const recRef = ref(rtdb, `recommendations/${userId}`);
       await push(recRef, {
         timestamp: Date.now(),
+        date: timestamp,
         journal: text,
+        mood: mood || null,
         ...parsed,
       });
 
-      return new Response(JSON.stringify(parsed), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (err) {
-      console.error("❌ JSON Parse Error:", content);
-      return new Response(JSON.stringify({ error: "Invalid AI JSON.", raw: content }), { status: 500 });
+      console.log("✅ Data saved to Firebase");
+    } catch (firebaseError) {
+      console.error("❌ Firebase Error:", firebaseError);
+      // Don't fail the request if Firebase fails, just log it
     }
+
+    return new Response(JSON.stringify(parsed), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
   } catch (error) {
-    console.error("🔥 Chat API Error:", error);
-    return new Response(JSON.stringify({ error: "AI fetch failed." }), { status: 500 });
+    console.error("🔥 API Route Error:", error);
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: error.message 
+      }), 
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

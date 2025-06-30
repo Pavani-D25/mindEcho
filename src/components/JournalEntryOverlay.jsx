@@ -968,7 +968,8 @@ export default function JournalEntryOverlay({ onClose }) {
     >
       {/* Enhanced Backdrop */}
       <div
-        className="absolute inset-0 bg-gradient-to-br from-blue-50/95 via-indigo-50/90 to-purple-50/95 backdrop-blur-2xl"
+        // className="absolute inset-0 bg-gradient-to-br from-blue-50/95 via-indigo-50/90 to-purple-50/95 backdrop-blur-2xl"
+        className="absolute inset-0 bg-white/10 backdrop-blur-xl"
         onClick={onClose}
       />
       
