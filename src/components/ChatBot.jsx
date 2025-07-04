@@ -582,7 +582,7 @@ export default function ChatBot({ onClose }) {
               <MessageCircle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold">MindBloom Assistant</h3>
+              <h3 className="font-semibold">MindEcho Assistant</h3>
               <p className="text-xs text-green-500">Online</p>
             </div>
           </div>

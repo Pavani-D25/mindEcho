@@ -26,7 +26,7 @@ export default function Home() {
         <div className="flex flex-col items-center gap-3">
           <Icons.logo className="h-14 w-14 text-purple-500" />
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500">
-            MindBloom
+            MindEcho
           </h1>
           <p className="text-sm text-gray-600">
             Cultivate your mind with daily wellness & AI insights
