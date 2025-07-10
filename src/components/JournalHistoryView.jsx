@@ -210,7 +210,7 @@ export default function JournalHistoryView() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+<div className="fixed inset-0 bg-white/20 backdrop-blur-md rounded-xl border border-white/30 shadow-lg flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-sm mx-4">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Delete Entry?</h3>
             <p className="text-gray-600 mb-4">This action cannot be undone.</p>
