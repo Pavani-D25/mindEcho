@@ -67,7 +67,7 @@ export default function JournalEntryOverlay({ onClose }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed bg-black/80 inset-0 z-50 flex items-center justify-center p-4"
     >
       {/* Enhanced Backdrop */}
       <div
@@ -107,7 +107,7 @@ export default function JournalEntryOverlay({ onClose }) {
         initial={{ y: 50, scale: 0.9, opacity: 0 }}
         animate={{ y: 0, scale: 1, opacity: 1 }}
         exit={{ y: 50, scale: 0.9, opacity: 0 }}
-        className="relative w-full max-w-7xl max-h-[95vh] overflow-hidden"
+        className="relative  p-6 bg-white/90 backdrop-blur-sm rounded-3xl w-full max-w-7xl max-h-[95vh] overflow-hidden"
       >
         {/* Header Bar */}
         <div className="relative mb-6 flex justify-between items-center">
@@ -118,8 +118,7 @@ export default function JournalEntryOverlay({ onClose }) {
             className="flex items-center gap-4"
           >
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              
               className="p-3 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-lg"
             >
               <Brain className="w-8 h-8 text-white" />
@@ -356,10 +355,10 @@ export default function JournalEntryOverlay({ onClose }) {
                     >
                       <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-2xl flex items-center justify-center">
-                          <Sparkles className="w-8 h-8 text-white/60" />
+                          <Sparkles className="w-8 h-8 text-black/60" />
                         </div>
-                        <p className="text-white/60 text-lg">AI insights will appear here</p>
-                        <p className="text-white/40 text-sm mt-2">Write in your journal and click analyze</p>
+                        <p className="text-black/60 text-lg">AI insights will appear here</p>
+                        <p className="text-black/40 text-sm mt-2">Write in your journal and click analyze</p>
                       </div>
                     </motion.div>
                   )}

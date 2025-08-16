@@ -1,66 +1,28 @@
-// import { NextResponse } from "next/server";
-// import { AccessToken } from "livekit-server-sdk";
-
-// const apiKey = process.env.LIVEKIT_API_KEY;
-// const apiSecret = process.env.LIVEKIT_API_SECRET;
-
-// export async function POST(req) {
-//   try {
-//     const body = await req.json();
-//     const { identity, roomName } = body;
-
-//     if (!identity || !roomName) {
-//       return NextResponse.json({ error: "Missing identity or roomName" }, { status: 400 });
-//     }
-
-//     const token = new AccessToken(apiKey, apiSecret, { identity });
-//     token.addGrant({ roomJoin: true, room: roomName });
-
-//     const jwt = await token.toJwt();
-//     return NextResponse.json({ token: jwt });
-
-//   } catch (error) {
-//     console.error("Token API error:", error.message);
-//     return NextResponse.json({ error: "Invalid request" }, { status: 500 });
-//   }
-// }
-
-
-
 import { NextResponse } from "next/server";
-import { AccessToken, RoomGrant } from "livekit-server-sdk";
-
-const apiKey = process.env.LIVEKIT_API_KEY;
-const apiSecret = process.env.LIVEKIT_API_SECRET;
+import { AccessToken } from "livekit-server-sdk";
 
 export async function POST(req) {
   try {
-    const { identity, roomName, language } = await req.json();
+    const { identity, roomName } = await req.json();
 
     if (!identity || !roomName) {
-      return NextResponse.json(
-        { error: "Missing identity or roomName" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing identity or roomName" }, { status: 400 });
     }
 
-    if (!apiKey || !apiSecret) {
-      return NextResponse.json(
-        { error: "LiveKit API key/secret not configured" },
-        { status: 500 }
-      );
-    }
+    const at = new AccessToken(
+      process.env.LIVEKIT_API_KEY,
+      process.env.LIVEKIT_API_SECRET,
+      { identity }
+    );
 
-    const token = new AccessToken(apiKey, apiSecret, { identity });
-    const grant = new RoomGrant({ room: roomName, roomJoin: true });
-    token.addGrant(grant);
+    // grant permission to join the room
+    at.addGrant({ roomJoin: true, room: roomName });
 
-    const jwt = token.toJwt();
+    const token = await at.toJwt();
 
-    // Return token AND the language requested
-    return NextResponse.json({ token: jwt, language: language || "en" });
-  } catch (error) {
-    console.error("Token API error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ token });
+  } catch (err) {
+    console.error("Token generation failed:", err);
+    return NextResponse.json({ error: "Failed to generate token" }, { status: 500 });
   }
 }
