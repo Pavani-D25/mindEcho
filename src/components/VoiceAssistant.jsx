@@ -1075,7 +1075,6 @@
 //     </div>
 //   );
 // }
-
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1230,41 +1229,41 @@ export default function VoiceAssistantModal({ isOpen, onClose }) {
         onClick={handleBackdropClick}
       >
         <motion.div
-          className="bg-white rounded-3xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[85vh] flex flex-col"
+          className="bg-white rounded-3xl p-4 sm:p-6 max-w-2xl w-full mx-2 sm:mx-4 shadow-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col"
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <Mic className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <Mic className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800">Voice Assistant</h3>
-                <p className="text-sm text-gray-600">{status}</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-800">Voice Assistant</h3>
+                <p className="text-xs sm:text-sm text-gray-600 truncate max-w-[150px] sm:max-w-none">{status}</p>
               </div>
             </div>
             <button 
               onClick={onClose} 
-              className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="text-gray-400 hover:text-gray-600 p-1 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Close voice assistant"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
           {/* Voice Selection */}
-          <div className="mb-6">
-            <p className="text-sm font-medium text-gray-700 mb-3">SELECT VOICE PERSONALITY</p>
-            <div className="flex flex-wrap gap-3">
+          <div className="mb-4 sm:mb-6">
+            <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">SELECT VOICE PERSONALITY</p>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {voices.map((voice) => (
                 <button
                   key={voice.id}
                   onClick={() => setSelectedVoice(voice)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                     selectedVoice.id === voice.id
                       ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1277,13 +1276,13 @@ export default function VoiceAssistantModal({ isOpen, onClose }) {
           </div>
 
           {/* Conversation Log */}
-          <div className="flex-1 mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Conversation</h4>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto bg-gray-50 rounded-2xl p-4">
+          <div className="flex-1 mb-4 sm:mb-6">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">Conversation</h4>
+            <div className="space-y-2 sm:space-y-3 max-h-[200px] sm:max-h-[300px] overflow-y-auto bg-gray-50 rounded-2xl p-3 sm:p-4">
               {conversationLog.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  <Mic className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm">No conversation yet. Start by saying something!</p>
+                <div className="text-center text-gray-500 py-6 sm:py-8">
+                  <Mic className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-xs sm:text-sm">No conversation yet. Start by saying something!</p>
                 </div>
               ) : (
                 conversationLog.map((entry, idx) => (
@@ -1292,13 +1291,13 @@ export default function VoiceAssistantModal({ isOpen, onClose }) {
                     className={`flex ${entry.sender === "User" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`rounded-2xl p-3 max-w-xs ${
+                      className={`rounded-2xl p-2 sm:p-3 max-w-[250px] sm:max-w-xs ${
                         entry.sender === "User"
                           ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
                           : "bg-white text-gray-800 shadow-sm"
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{entry.text}</p>
+                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{entry.text}</p>
                       {entry.voice && (
                         <p className="text-xs opacity-70 mt-1">Voice: {entry.voice}</p>
                       )}
@@ -1315,47 +1314,49 @@ export default function VoiceAssistantModal({ isOpen, onClose }) {
           </div>
 
           {/* Input */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex space-x-2">
               <input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message or use voice..."
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-sm sm:text-base"
                 disabled={status.includes("Generating")}
               />
               <button
                 onClick={handleConversation}
                 disabled={status.includes("Generating")}
-                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm sm:text-base"
               >
                 Send
               </button>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={handlePreview}
                 disabled={status.includes("Previewing") || status.includes("Generating")}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm sm:text-base"
               >
                 <Volume2 className="w-4 h-4" />
-                Preview Voice
+                <span className="hidden xs:inline">Preview Voice</span>
+                <span className="xs:hidden">Preview</span>
               </button>
               <button
                 onClick={handleConversation}
                 disabled={status.includes("Generating")}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                className="flex items-center justify-center gap-2 px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm sm:text-base"
               >
                 <Mic className="w-4 h-4" />
-                Start Voice Chat
+                <span className="hidden xs:inline">Start Voice Chat</span>
+                <span className="xs:hidden">Voice Chat</span>
               </button>
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 mt-3 text-center">
+          <p className="text-xs text-gray-500 mt-2 sm:mt-3 text-center">
             Voice assistant for mental health support and guidance.
           </p>
         </motion.div>
