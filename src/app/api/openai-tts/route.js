@@ -116,7 +116,7 @@ export async function POST(req) {
 }
 
 // Handle GET requests (optional - for health check)
-export async function GET(req) {
+export async function GET() {
   return NextResponse.json({
     status: 'OpenAI TTS API is running',
     supportedVoices: ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'],
