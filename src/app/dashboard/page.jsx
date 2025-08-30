@@ -203,9 +203,10 @@ export default function Dashboard() {
 
       {/* Modals */}
       <AnimatePresence>
-        {showVoiceAssistant && (
-          <VoiceAssistant onClose={() => setShowVoiceAssistant(false)} />
-        )}
+        <VoiceAssistant 
+  isOpen={showVoiceAssistant} 
+  onClose={() => setShowVoiceAssistant(false)} 
+/>
         {showChatBot && <ChatBot onClose={() => setShowChatBot(false)} />}
         {showJournalModal && (
           <>
