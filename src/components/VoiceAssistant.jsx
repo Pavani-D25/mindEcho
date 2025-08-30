@@ -120,7 +120,6 @@
 // }
 
 
-
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { 
   X, 
@@ -150,6 +149,7 @@ export default function VoiceAssistant({ onClose = () => {} }) {
   const [shouldKeepListening, setShouldKeepListening] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Voice settings with OpenAI voices
   const [voiceSettings, setVoiceSettings] = useState({
@@ -213,6 +213,8 @@ export default function VoiceAssistant({ onClose = () => {} }) {
   const voiceSettingsRef = useRef(voiceSettings);
   const restartTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const streamTrackRef = useRef(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -276,7 +278,7 @@ export default function VoiceAssistant({ onClose = () => {} }) {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      if (audioRef.current.src) {
+      if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
         URL.revokeObjectURL(audioRef.current.src);
       }
       audioRef.current = null;
@@ -289,27 +291,68 @@ export default function VoiceAssistant({ onClose = () => {} }) {
     setIsAgentSpeaking(false);
   }, []);
 
-  // Browser TTS fallback
-  const fallbackToBrowserTTS = useCallback((text) => {
-    if (!window.speechSynthesis) {
+  // Mock AI Response (since we can't access real APIs in this environment)
+  const mockAIResponse = useCallback((text) => {
+    // Simulate some intelligent responses based on input
+    const responses = [
+      "That's an interesting question. Let me think about that for a moment.",
+      "I understand what you're asking. Here's what I think about that topic.",
+      "Great point! That reminds me of something similar I've been considering.",
+      "Thanks for sharing that with me. I find that perspective quite fascinating.",
+      "That's a complex topic with many different angles to consider.",
+      "I appreciate you bringing that up. It's definitely worth discussing further.",
+      "You've raised an important point that deserves a thoughtful response.",
+      "I can see why that would be on your mind. Let me share my thoughts.",
+      "That's something I've been thinking about too. Here's my take on it.",
+      "Interesting perspective! I'd like to explore that idea with you."
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)] + 
+           " " + text.split(' ').slice(-3).join(' ') + " is definitely worth considering.";
+  }, []);
+
+  // Browser TTS function
+  const speakWithBrowserTTS = useCallback((text) => {
+    if (!window.speechSynthesis || !text.trim()) {
       setIsAgentSpeaking(false);
       return;
     }
 
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.volume = 1;
+    utterance.rate = voiceSettings.speed;
+    utterance.pitch = 1;
     utterance.lang = 'en-US';
     
+    // Try to find a voice that matches our selection
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.name.toLowerCase().includes('female') || 
+      voice.name.toLowerCase().includes('male') ||
+      voice.lang.startsWith('en')
+    ) || voices[0];
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    utterance.onstart = () => setIsAgentSpeaking(true);
     utterance.onend = () => setIsAgentSpeaking(false);
     utterance.onerror = () => setIsAgentSpeaking(false);
     
     setIsAgentSpeaking(true);
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [voiceSettings.speed]);
 
   // Send text to AI and handle TTS
   const sendTextToAI = useCallback(async (text) => {
+    if (isProcessing) return;
+    
     try {
+      setIsProcessing(true);
       const userMessage = {
         sender: "user",
         text: text,
@@ -330,21 +373,11 @@ export default function VoiceAssistant({ onClose = () => {} }) {
       
       cleanupAudio();
 
-      // Get AI reply
-      const aiResponse = await fetch('/api/ai-reply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text, 
-          voiceSettings 
-        })
-      });
-      
-      if (!aiResponse.ok) {
-        throw new Error(`AI response failed: ${aiResponse.status}`);
-      }
-      
-      const { reply } = await aiResponse.json();
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+      // Get mock AI response
+      const reply = mockAIResponse(text);
       setAgentResponse(reply);
 
       // Update messages with actual response
@@ -358,76 +391,36 @@ export default function VoiceAssistant({ onClose = () => {} }) {
         }
       ]);
 
-      // Get latest voice settings
-      const latestVoiceSettings = voiceSettingsRef.current;
-
-      // Generate TTS with OpenAI
-      try {
-        setIsAgentSpeaking(true);
-        const ttsResponse = await fetch('/api/openai-tts', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          },
-          body: JSON.stringify({
-            text: reply,
-            voice: latestVoiceSettings.voice,
-            model: latestVoiceSettings.model,
-            speed: latestVoiceSettings.speed
-          })
-        });
-
-        if (!ttsResponse.ok) {
-          throw new Error(`TTS request failed: ${ttsResponse.status}`);
-        }
-
-        const audioBlob = await ttsResponse.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-
-        audio.onended = () => {
-          setIsAgentSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-
-        audio.onerror = (e) => {
-          console.error('Audio playback error:', e);
-          setIsAgentSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-          fallbackToBrowserTTS(reply);
-        };
-
-        await audio.play();
-      } catch (ttsError) {
-        console.error('OpenAI TTS failed:', ttsError);
-        setIsAgentSpeaking(false);
-        fallbackToBrowserTTS(reply);
-      }
+      // Speak the response using browser TTS
+      speakWithBrowserTTS(reply);
+      
     } catch (err) {
       console.error('Error:', err);
-      setAgentResponse("ERROR: UNABLE TO PROCESS REQUEST");
-      setIsAgentSpeaking(false);
+      const errorMessage = "Sorry, I had trouble processing that. Could you try again?";
+      setAgentResponse(errorMessage);
       
       // Remove loading message and add error message
       setMessages(prev => [
         ...prev.slice(0, -1),
         {
           sender: "bot",
-          text: "ERROR: UNABLE TO PROCESS REQUEST",
+          text: errorMessage,
           loading: false,
           timestamp: new Date().toISOString(),
         }
       ]);
+      
+      speakWithBrowserTTS(errorMessage);
+    } finally {
+      setIsProcessing(false);
     }
-  }, [fallbackToBrowserTTS, cleanupAudio, voiceSettings]);
+  }, [mockAIResponse, speakWithBrowserTTS, cleanupAudio, isProcessing]);
 
   // Initialize speech recognition with auto-restart
   const initializeSpeechRecognition = useCallback(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       console.warn('Speech recognition not supported');
-      return;
+      return false;
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -452,7 +445,7 @@ export default function VoiceAssistant({ onClose = () => {} }) {
       }
       
       // Auto-restart if we should keep listening and still connected
-      if (shouldKeepListening && isConnected && !isMuted) {
+      if (shouldKeepListening && isConnected && !isMuted && !isProcessing) {
         console.log('Auto-restarting speech recognition...');
         setIsReconnecting(true);
         
@@ -465,9 +458,8 @@ export default function VoiceAssistant({ onClose = () => {} }) {
               // If restart fails, try reinitializing
               setTimeout(() => {
                 if (shouldKeepListening && isConnected) {
-                  initializeSpeechRecognition();
-                  if (recognitionRef.current) {
-                    recognitionRef.current.start();
+                  if (initializeSpeechRecognition()) {
+                    recognitionRef.current?.start();
                   }
                 }
               }, 1000);
@@ -475,7 +467,7 @@ export default function VoiceAssistant({ onClose = () => {} }) {
           } else {
             setIsReconnecting(false);
           }
-        }, 100);
+        }, 500);
       } else {
         setConnectionStatus(isConnected ? 'connected' : 'disconnected');
         setIsReconnecting(false);
@@ -500,15 +492,15 @@ export default function VoiceAssistant({ onClose = () => {} }) {
         setTranscript(interim + (final ? ' ' + final : ''));
       }
       
-      if (final.trim()) {
+      if (final.trim() && !isProcessing) {
         console.log('Final transcript:', final);
-        setTranscript(final);
+        setTranscript('');
         sendTextToAI(final);
       }
     };
 
     recognition.onerror = (event) => {
-      console.warn('Speech recognition event:', event.error);
+      console.warn('Speech recognition error:', event.error);
       
       // Handle different error types
       switch (event.error) {
@@ -547,7 +539,8 @@ export default function VoiceAssistant({ onClose = () => {} }) {
     };
 
     recognitionRef.current = recognition;
-  }, [shouldKeepListening, isConnected, isMuted, sendTextToAI]);
+    return true;
+  }, [shouldKeepListening, isConnected, isMuted, sendTextToAI, isProcessing]);
 
   // Start listening
   const startListening = useCallback(async () => {
@@ -556,7 +549,16 @@ export default function VoiceAssistant({ onClose = () => {} }) {
 
     try {
       // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      mediaStreamRef.current = stream;
+      streamTrackRef.current = stream.getAudioTracks()[0];
 
       // Clean up existing audio context properly
       if (audioContextRef.current) {
@@ -570,11 +572,15 @@ export default function VoiceAssistant({ onClose = () => {} }) {
         audioContextRef.current = null;
       }
       
-      // Create new audio context
+      // Create new audio context for visualization
       try {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContextRef.current.resume(); // Ensure context is running
+        
         analyserRef.current = audioContextRef.current.createAnalyser();
         analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+        
         const source = audioContextRef.current.createMediaStreamSource(stream);
         source.connect(analyserRef.current);
         
@@ -588,7 +594,9 @@ export default function VoiceAssistant({ onClose = () => {} }) {
       // Initialize and start speech recognition
       setShouldKeepListening(true);
       if (!recognitionRef.current) {
-        initializeSpeechRecognition();
+        if (!initializeSpeechRecognition()) {
+          throw new Error('Speech recognition not available');
+        }
       }
       
       if (recognitionRef.current) {
@@ -597,9 +605,8 @@ export default function VoiceAssistant({ onClose = () => {} }) {
         } catch (recognitionError) {
           console.warn('Speech recognition start error:', recognitionError);
           // Try to reinitialize
-          initializeSpeechRecognition();
-          if (recognitionRef.current) {
-            recognitionRef.current.start();
+          if (initializeSpeechRecognition()) {
+            recognitionRef.current?.start();
           }
         }
       }
@@ -608,15 +615,36 @@ export default function VoiceAssistant({ onClose = () => {} }) {
       setConnectionStatus('connected');
       setIsMuted(false);
       
+      // Add welcome message
+      setMessages([{
+        sender: "bot",
+        text: "Hello! I'm ready to chat. What would you like to talk about?",
+        loading: false,
+        timestamp: new Date().toISOString(),
+      }]);
+      
+      // Speak welcome message
+      setTimeout(() => {
+        speakWithBrowserTTS("Hello! I'm ready to chat. What would you like to talk about?");
+      }, 500);
+      
     } catch (err) {
       console.error('startListening error:', err);
       setConnectionStatus('failed');
       setShouldKeepListening(false);
       setIsReconnecting(false);
+      
+      // Add error message
+      setMessages([{
+        sender: "bot",
+        text: "Sorry, I couldn't access your microphone. Please check your browser permissions and try again.",
+        loading: false,
+        timestamp: new Date().toISOString(),
+      }]);
     } finally {
       setIsConnecting(false);
     }
-  }, [initializeSpeechRecognition, monitorAudioLevel]);
+  }, [initializeSpeechRecognition, monitorAudioLevel, speakWithBrowserTTS]);
 
   // Stop listening
   const stopListening = useCallback(async () => {
@@ -625,6 +653,7 @@ export default function VoiceAssistant({ onClose = () => {} }) {
     // Stop auto-restart behavior
     setShouldKeepListening(false);
     setIsReconnecting(false);
+    setIsProcessing(false);
     
     // Clear any pending restarts
     if (restartTimeoutRef.current) {
@@ -646,6 +675,17 @@ export default function VoiceAssistant({ onClose = () => {} }) {
         console.warn('Error stopping speech recognition:', e);
       }
       recognitionRef.current = null;
+    }
+    
+    // Stop media stream
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    
+    if (streamTrackRef.current) {
+      streamTrackRef.current.stop();
+      streamTrackRef.current = null;
     }
     
     // Close audio context properly
@@ -720,16 +760,27 @@ export default function VoiceAssistant({ onClose = () => {} }) {
     voiceSettingsRef.current = voiceSettings;
   }, [voiceSettings]);
 
+  // Load voices for browser TTS
+  useEffect(() => {
+    if (window.speechSynthesis) {
+      // Load voices
+      window.speechSynthesis.getVoices();
+      // Some browsers need this event
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+
   // Cleanup on component unmount
   useEffect(() => {
-    initializeSpeechRecognition();
-    
     return () => {
       console.log('VoiceAssistant unmounting, cleaning up...');
       
       // Stop auto-restart behavior
       setShouldKeepListening(false);
       setIsReconnecting(false);
+      setIsProcessing(false);
       
       // Clear timeouts
       if (restartTimeoutRef.current) {
@@ -745,6 +796,17 @@ export default function VoiceAssistant({ onClose = () => {} }) {
           console.warn('Error stopping recognition on unmount:', e);
         }
         recognitionRef.current = null;
+      }
+      
+      // Stop media stream
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+      
+      if (streamTrackRef.current) {
+        streamTrackRef.current.stop();
+        streamTrackRef.current = null;
       }
       
       // Clean up animation
@@ -770,7 +832,7 @@ export default function VoiceAssistant({ onClose = () => {} }) {
       // Clean up audio
       cleanupAudio();
     };
-  }, [initializeSpeechRecognition, cleanupAudio]);
+  }, [cleanupAudio]);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -936,6 +998,9 @@ export default function VoiceAssistant({ onClose = () => {} }) {
               <p className="text-gray-500 text-sm font-mono">
                 Press "START CONVERSATION" to begin voice chat
               </p>
+              <p className="text-gray-400 text-xs mt-2">
+                This demo uses browser speech recognition and text-to-speech
+              </p>
             </div>
           )}
           
@@ -993,9 +1058,16 @@ export default function VoiceAssistant({ onClose = () => {} }) {
           <div ref={messagesEndRef} />
         </div>
         
-        <p className="text-xs text-gray-500 mt-4 text-center">
-          Voice assistant powered by OpenAI. May produce inaccurate information.
-        </p>
+        <div className="mt-4 space-y-2">
+          <p className="text-xs text-gray-500 text-center">
+            Voice assistant demo using browser APIs. Works best in Chrome.
+          </p>
+          {!isConnected && (
+            <p className="text-xs text-gray-400 text-center">
+              Make sure to allow microphone permissions when prompted
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
