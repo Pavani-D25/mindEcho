@@ -1199,14 +1199,14 @@ const VoiceAssistant = ({ onClose }) => {
                     </div>
                   ) : (
                     <button
-                      onClick={isListening ? stopListening : startListening}
-                      disabled={isProcessing}
-                      className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full transition-all duration-300 transform ${
-                        isListening ? 'bg-white/20 hover:bg-white/30 rotate-12' : 'bg-white/20 hover:bg-white/30'
-                      } text-white disabled:opacity-50 hover:scale-110 backdrop-blur-sm border border-white/30 shadow-lg`}
-                    >
-                      {isListening ? <MicOff className="h-7 w-7 sm:h-8 sm:w-8" /> : <Mic className="h-7 w-7 sm:h-8 sm:w-8" />}
-                    </button>
+  onClick={isListening ? stopListening : startListening}
+  disabled={isProcessing}
+  className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full transition-all duration-300 transform justify-center ${
+    isListening ? 'bg-white/20 hover:bg-white/30 rotate-12' : 'bg-white/20 hover:bg-white/30'
+  } text-white disabled:opacity-50 hover:scale-110 backdrop-blur-sm border border-white/30 shadow-lg flex justify-center items-center`}
+>
+  {isListening ? <MicOff className="h-7 w-7 sm:h-8 sm:w-8" /> : <Mic className="h-7 w-7 sm:h-8 sm:w-8" />}
+</button>
                   )}
                 </div>
               </div>
