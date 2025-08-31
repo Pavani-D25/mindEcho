@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    const { text, voiceId = 'en-US-natalie', speed = 1.0 } = await req.json();
+    const { text, voiceId = 'en-US-natalie' } = await req.json();
 
     // Validate input
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
