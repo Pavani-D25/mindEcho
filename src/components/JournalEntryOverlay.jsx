@@ -1076,7 +1076,7 @@ export default function JournalEntryOverlay({ onClose }) {
                     backgroundClip: 'text'
                   }}
                 >
-                  MindFlow
+                  MindEcho
                 </motion.h1>
                 <motion.p 
                   initial={{ y: -10, opacity: 0 }}
