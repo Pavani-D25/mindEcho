@@ -222,7 +222,7 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-purple-50 to-blue-50 px-4">
-      <div className="absolute inset-0 bg-[url('/grid-light.svg')] bg-[length:40px_40px] opacity-10 -z-10" />
+<div className="absolute inset-0 bg-[url('/grid.svg')] bg-[length:40px_40px] opacity-10 -z-10" />
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
