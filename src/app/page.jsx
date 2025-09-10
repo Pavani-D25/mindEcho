@@ -55,14 +55,14 @@ export default function Home() {
         </div>
 
         {/* Divider */}
-        {/* <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
           <div className="flex-1 h-px bg-purple-200" />
           <span className="text-xs text-gray-400">or continue with</span>
           <div className="flex-1 h-px bg-purple-200" />
-        </div> */}
+        </div>
 
         {/* Social Icons */}
-        {/* <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4">
           <Button variant="outline" size="icon" className="hover:bg-purple-100 rounded-full">
             <Icons.google className="h-5 w-5 text-purple-600" />
           </Button>
@@ -72,7 +72,7 @@ export default function Home() {
           <Button variant="outline" size="icon" className="hover:bg-purple-100 rounded-full">
             <Icons.twitter className="h-5 w-5 text-purple-600" />
           </Button>
-        </div> */}
+        </div>
 
         {/* Footer */}
         <motion.p

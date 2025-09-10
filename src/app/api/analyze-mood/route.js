@@ -236,7 +236,9 @@ export async function POST(req) {
       zh: "Chinese",
       hi: "Hindi",
       ru: "Russian",
-      ar: "Arabic"
+      ar: "Arabic",
+      ta: "Tamil"
+
     };
     
     const languageName = languageNames[mediaLanguage] || "English";
