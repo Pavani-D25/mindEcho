@@ -175,13 +175,7 @@ export default function UserMenu() {
 
               {/* Menu Items */}
               <div className="py-1">
-                <motion.button
-                  whileHover={{ backgroundColor: "rgba(156, 163, 175, 0.1)" }}
-                  className="flex w-full items-center px-4 py-3 text-sm text-gray-700 hover:text-gray-900 transition-colors"
-                >
-                  <User className="w-4 h-4 mr-3 text-gray-500" />
-                  Profile
-                </motion.button>
+               
                 
                 <motion.button
                   whileHover={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}
