@@ -63,9 +63,11 @@ export default function Home() {
 
         {/* Social Icons */}
         <div className="flex justify-center gap-4">
+          <Link href="/auth/register">
           <Button variant="outline" size="icon" className="hover:bg-purple-100 rounded-full">
             <Icons.google className="h-5 w-5 text-purple-600" />
           </Button>
+          </Link>
           <Button variant="outline" size="icon" className="hover:bg-purple-100 rounded-full">
             <Icons.github className="h-5 w-5 text-purple-600" />
           </Button>

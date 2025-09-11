@@ -985,45 +985,125 @@ export default function JournalEntryOverlay({ onClose }) {
     return () => unsub();
   }, []);
 
+  // const handleSubmit = async () => {
+  //   if (!entry.trim() || !user) return;
+  //   setLoading(true);
+  //   setAiResponse(null);
+  //   setError(null);
+
+  //   try {
+  //     await push(ref(rtdb, `journals/${user.uid}`), {
+  //       entry,
+  //       createdAt: Date.now(),
+  //     });
+
+  //     const res = await fetch("/api/analyze-journal", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ entry }),
+  //     });
+
+  //     if (!res.ok) {
+  //       const errorText = await res.text();
+  //       throw new Error(`API request failed: ${res.status} - ${errorText}`);
+  //     }
+
+  //     const data = await res.json();
+  //     if (data.error) {
+  //       throw new Error(data.error);
+  //     }
+
+  //     setAiResponse(data?.recommendation || "No AI response received.");
+  //     setStep(2); // Advance to AI response
+  //   } catch (err) {
+  //     console.error("Error in handleSubmit:", err);
+  //     setError(err.message || "Something went wrong.");
+  //     setAiResponse("Unable to get AI analysis. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const handleSubmit = async () => {
-    if (!entry.trim() || !user) return;
-    setLoading(true);
-    setAiResponse(null);
-    setError(null);
+  if (!entry.trim() || !user) return;
+  setLoading(true);
+  setAiResponse(null);
+  setError(null);
 
-    try {
-      await push(ref(rtdb, `journals/${user.uid}`), {
-        entry,
-        createdAt: Date.now(),
-      });
+  try {
+    // Get AI analysis first
+    const res = await fetch("/api/analyze-journal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entry }),
+    });
 
-      const res = await fetch("/api/analyze-journal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entry }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`API request failed: ${res.status} - ${errorText}`);
-      }
-
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setAiResponse(data?.recommendation || "No AI response received.");
-      setStep(2); // Advance to AI response
-    } catch (err) {
-      console.error("Error in handleSubmit:", err);
-      setError(err.message || "Something went wrong.");
-      setAiResponse("Unable to get AI analysis. Please try again.");
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`API request failed: ${res.status} - ${errorText}`);
     }
-  };
 
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Create userId in the same format as your other components
+    const safeUserId = user.email ? user.email.replace(/\W/g, "_") : user.uid;
+    
+    // Prepare data for both saves
+    const timestamp = Date.now();
+    
+    // Data for journals path
+    const journalData = {
+      entry,
+      createdAt: timestamp,
+      mood: data?.mood || "neutral",
+      recommendations: data ? {
+        exercise: data.exercise || null,
+        song: data.song || null,
+        movie: data.movie || null,
+      } : null,
+    };
+
+    // Data for recommendations path
+    const recommendationData = {
+      journalText: entry,
+      timestamp: timestamp,
+      mood: data?.mood || "neutral",
+      exercise: data?.exercise || null,
+      song: data?.song || null,
+      movie: data?.movie || null,
+      createdAt: timestamp,
+    };
+
+    // Save to both locations with individual error tracking
+    const saveResults = await Promise.allSettled([
+      push(ref(rtdb, `journals/${user.uid}`), journalData),
+      push(ref(rtdb, `recommendations/${safeUserId}`), recommendationData)
+    ]);
+
+    // Check if any saves failed
+    const failedSaves = saveResults.filter(result => result.status === 'rejected');
+    if (failedSaves.length > 0) {
+      console.warn("Some saves failed:", failedSaves);
+      // Still proceed if at least one save succeeded
+      if (failedSaves.length === saveResults.length) {
+        throw new Error("Failed to save to database. Please try again.");
+      }
+    }
+
+    setAiResponse(data?.recommendation || "No AI response received.");
+    setStep(2); // Advance to AI response
+  } catch (err) {
+    console.error("Error in handleSubmit:", err);
+    setError(err.message || "Something went wrong.");
+    setAiResponse("Unable to get AI analysis. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <motion.div
       initial={{ opacity: 0 }}

@@ -25,31 +25,84 @@ export default function JournalHistoryView() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!userId) return;
+  // useEffect(() => {
+  //   if (!userId) return;
 
-    const recRef = ref(rtdb, `recommendations/${userId}`);
-    const unsubscribe = onValue(recRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const entries = Object.keys(data)
-          .map((key) => ({
-            id: key,
-            ...data[key],
-          }))
-          .filter(entry => entry.journalText) // Only show entries with journal text
-          .sort((a, b) => b.timestamp - a.timestamp); // Sort by newest first
+  //   const recRef = ref(rtdb, `recommendations/${userId}`);
+  //   const unsubscribe = onValue(recRef, (snapshot) => {
+  //     const data = snapshot.val();
+  //     if (data) {
+  //       const entries = Object.keys(data)
+  //         .map((key) => ({
+  //           id: key,
+  //           ...data[key],
+  //         }))
+  //         .filter(entry => entry.journalText) // Only show entries with journal text
+  //         .sort((a, b) => b.timestamp - a.timestamp); // Sort by newest first
         
-        setJournalEntries(entries);
-      } else {
-        setJournalEntries([]);
+  //       setJournalEntries(entries);
+  //     } else {
+  //       setJournalEntries([]);
+  //     }
+  //     setIsLoading(false);
+  //   });
+
+  //   return () => unsubscribe();
+  // }, [userId]);
+
+
+  // Alternative: Update the useEffect in JournalHistoryView to read from journals path
+
+useEffect(() => {
+  if (!userId) return;
+
+  // Read from both journals and recommendations
+  const journalsRef = ref(rtdb, `journals/${userId}`);
+  const recsRef = ref(rtdb, `recommendations/${userId}`);
+  
+  const unsubscribeJournals = onValue(journalsRef, (snapshot) => {
+    const journalData = snapshot.val();
+    
+    // Also get recommendations data
+    onValue(recsRef, (recSnapshot) => {
+      const recData = recSnapshot.val();
+      
+      let combinedEntries = [];
+      
+      // Add journal entries
+      if (journalData) {
+        const journalEntries = Object.keys(journalData).map((key) => ({
+          id: key,
+          journalText: journalData[key].entry,
+          timestamp: journalData[key].createdAt,
+          mood: "neutral", // Default mood for journal-only entries
+          source: "journal"
+        }));
+        combinedEntries = [...combinedEntries, ...journalEntries];
       }
+      
+      // Add recommendation entries (these might have AI analysis)
+      if (recData) {
+        const recEntries = Object.keys(recData)
+          .map((key) => ({
+            id: `rec_${key}`,
+            ...recData[key],
+          }))
+          .filter(entry => entry.journalText);
+        combinedEntries = [...combinedEntries, ...recEntries];
+      }
+      
+      // Remove duplicates and sort by timestamp
+      const uniqueEntries = combinedEntries
+        .sort((a, b) => b.timestamp - a.timestamp);
+      
+      setJournalEntries(uniqueEntries);
       setIsLoading(false);
     });
+  });
 
-    return () => unsubscribe();
-  }, [userId]);
-
+  return () => unsubscribeJournals();
+}, [userId]);
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
